@@ -1,41 +1,27 @@
 /**
  * Query: q101_getUserCollections
- * Read-only: returns LLA collections for the current user (Morocco DB).
- * Used to populate the collection dropdown; requires auth0Id and email.
+ * Read-only: returns LLA collections for the current user.
+ * Caller must pass userId (e.g. from req.user.id after auth middleware).
  */
 const { prisma } = require('../services/db');
 
 /**
- * @param {{ auth0Id: string, email: string }} params
+ * @param {{ userId: string }} params
  * @returns {Promise<{ ok: boolean; collections?: Array<{ collectionId: string; collectionTitle: string }>; error?: string; errorCode?: string }>}
  */
-async function execute({ auth0Id, email }) {
-  const auth0IdTrimmed = typeof auth0Id === 'string' ? auth0Id.trim() : '';
-  const emailTrimmed = typeof email === 'string' ? email.trim() : '';
+async function execute({ userId }) {
+  const userIdTrimmed = typeof userId === 'string' ? userId.trim() : '';
 
-  if (!auth0IdTrimmed || !emailTrimmed) {
+  if (!userIdTrimmed) {
     return {
       ok: false,
-      error: 'auth0Id and email are required',
+      error: 'userId is required',
       errorCode: 'NO_CONTEXT',
     };
   }
 
-  const user = await prisma.user.findUnique({
-    where: { auth0Id: auth0IdTrimmed },
-    select: { id: true },
-  });
-
-  if (!user) {
-    return {
-      ok: false,
-      error: 'User not found',
-      errorCode: 'NO_USER',
-    };
-  }
-
   const collections = await prisma.collection.findMany({
-    where: { ownerUserId: user.id },
+    where: { ownerUserId: userIdTrimmed },
     select: { id: true, name: true },
     orderBy: { name: 'asc' },
   });

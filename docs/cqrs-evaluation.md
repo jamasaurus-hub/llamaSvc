@@ -34,7 +34,7 @@ Benefits: clearer intent, easier scaling of read vs write paths, and simpler mod
 ```
 llamaSvc/
 ├── commands/           # State-changing operations
-│   └── c200_saveTerms.js
+│   └── c101_saveLearningItemsToMorocco.js
 ├── queries/            # Read-only / no state change
 │   ├── health.js
 │   ├── q220_getDefinition.js
@@ -53,7 +53,7 @@ llamaSvc/
 
 | Operation | Type | Handler | Notes |
 |-----------|------|---------|--------|
-| Batch create learning items | Command | `commands/c200_saveTerms.js` | Uses `services/learningItems.js` (findOrCreateUser, normalise). |
+| Batch create learning items | Command | `commands/c101_saveLearningItemsToMorocco.js` | Uses `services/learningItems.js` (findOrCreateUser, normalise). |
 | Health check | Query | `queries/health.js` | Reads DB connectivity only. |
 | Get definition (translate term) | Query | `queries/q220_getDefinition.js` | Uses translation service; no DB write. |
 | Capitalise text | Query | `queries/capitalise.js` | Pure function; no side effects. |

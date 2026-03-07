@@ -1,28 +1,27 @@
 /**
- * POST /api/learning-items/batch – command: c200_saveTerms
+ * POST /api/learning-items/batch – command: c101_saveLearningItemsToMorocco
+ * Requires auth (Bearer token). Body: { collectionId, collectionName?, collectionDescription?, learningItems }.
  */
-const { execute: saveTermsCommand } = require('../commands/c200_saveTerms');
+const { execute: saveLearningItemsToMoroccoCommand } = require('../commands/c101_saveLearningItemsToMorocco');
 
 async function handleSaveTermsBatch(req, res) {
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   const body = req.body || {};
-  const auth0Id = typeof body.auth0Id === 'string' ? body.auth0Id.trim() : '';
-  const email = typeof body.email === 'string' ? body.email.trim() : '';
   const collectionId = typeof body.collectionId === 'string' ? body.collectionId.trim() : '';
+  const collectionName = typeof body.collectionName === 'string' ? body.collectionName : undefined;
+  const collectionDescription = typeof body.collectionDescription === 'string' ? body.collectionDescription : undefined;
   const learningItems = Array.isArray(body.learningItems) ? body.learningItems : [];
 
   console.log('[learning-items/batch] received', {
-    hasAuth0Id: !!auth0Id,
-    hasEmail: !!email,
+    userId,
     collectionId: collectionId || '(empty)',
     learningItemsCount: learningItems.length,
   });
 
-  if (!auth0Id || !email) {
-    console.log('[learning-items/batch] failed: auth0Id and email are required');
-    return res.status(400).json({
-      error: 'auth0Id and email are required',
-    });
-  }
   if (!collectionId) {
     console.log('[learning-items/batch] failed: collectionId is required');
     return res.status(400).json({
@@ -36,19 +35,34 @@ async function handleSaveTermsBatch(req, res) {
     });
   }
   try {
-    const created = await saveTermsCommand({
-      auth0Id,
-      email,
+    const { created, savedCount, ignoredCount } = await saveLearningItemsToMoroccoCommand({
+      userId,
       collectionId,
+      collectionName,
+      collectionDescription,
       learningItems,
     });
+    let message;
+    if (savedCount === 0 && ignoredCount > 0) {
+      message = `No terms were saved, ignored ${ignoredCount} duplicate${ignoredCount === 1 ? '' : 's'}.`;
+    } else if (savedCount > 0 && ignoredCount === 0) {
+      message = `Saved ${savedCount} term${savedCount === 1 ? '' : 's'}.`;
+    } else if (savedCount > 0 && ignoredCount > 0) {
+      message = `Saved ${savedCount} term${savedCount === 1 ? '' : 's'}, ignored ${ignoredCount} duplicate${ignoredCount === 1 ? '' : 's'}.`;
+    } else {
+      message = 'No terms were saved.';
+    }
     console.log('[learning-items/batch] saved to table', { count: created.length, ids: created.map((c) => c.id) });
-    return res.status(201).json(created);
+    return res.status(201).json({ message, items: created });
   } catch (err) {
     console.error('[learning-items/batch] failed to save terms to table', err.message, err);
     const status = err.status ?? 500;
-    const message = err.message ?? 'Failed to save terms';
-    return res.status(status).json({ error: message });
+    const errorDetail = err.message ?? 'Failed to save terms';
+    return res.status(status).json({
+      message: 'No terms were saved due to an error.',
+      error: errorDetail,
+      items: [],
+    });
   }
 }
 

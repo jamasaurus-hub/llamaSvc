@@ -27,6 +27,8 @@ Learning items are user-scoped rows that store a term and its definition, with o
 |--------|------|
 | `POST` | `/api/learning-items/batch` |
 
+**Authentication:** Required. Send `Authorization: Bearer <access_token>` (see [auth-clients.md](auth-clients.md)).
+
 Send a JSON body with `Content-Type: application/json`.
 
 ---
@@ -37,9 +39,7 @@ Send a JSON body with `Content-Type: application/json`.
 
 | Field          | Type   | Description |
 |----------------|--------|-------------|
-| `auth0Id`      | string | User identifier from Auth0 (e.g. `auth0\|123...`). |
-| `email`        | string | User’s email (for display and user lookup). |
-| `collectionId` | string | ID of the collection to add items to (e.g. from the collections list). |
+| `collectionId` | string | ID of the collection to add items to (e.g. from GET `/api/collections`). Must belong to the authenticated user. |
 | `learningItems`| array  | Array of term–definition objects (see below). |
 
 ### Each item in `learningItems`
@@ -59,9 +59,8 @@ Send a JSON body with `Content-Type: application/json`.
 ```bash
 curl -X POST http://localhost:5000/api/learning-items/batch \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -d '{
-    "auth0Id": "auth0|abc123",
-    "email": "user@example.com",
     "collectionId": "uuid-of-collection",
     "learningItems": [
       { "termText": "tal vez", "definitionText": "maybe", "language": "es" },
@@ -74,8 +73,6 @@ Example JSON body (e.g. from a Chrome extension):
 
 ```json
 {
-  "auth0Id": "auth0|abc123",
-  "email": "user@example.com",
   "collectionId": "uuid-of-collection",
   "learningItems": [
     { "termText": "Fundó junto", "definitionText": "Founded together" },
@@ -98,13 +95,15 @@ Errors return JSON with an `error` message:
 
 | Status | Cause |
 |--------|--------|
-| `400`  | Missing or empty `auth0Id`, `email`, or `collectionId`; or `learningItems` empty or an item missing `termText`/`definitionText`. |
+| `401`  | Missing or invalid `Authorization: Bearer <token>`. |
+| `400`  | Missing or empty `collectionId`; or `learningItems` empty or an item missing `termText`/`definitionText`. |
+| `403`  | Collection not found or does not belong to the authenticated user. |
 | `500`  | Server or database error. |
 
 ---
 
 ## Behaviour
 
-- **User**: The user is created if they don’t exist (by `auth0Id`), or their `email` and `lastActiveAt` are updated if they do.
+- **User**: Identity comes from the JWT (verified by the backend). The user is created on first login (Just-In-Time provisioning) or matched by provider id; `lastActiveAt` is updated on each request.
 - **CanonicalEntry**: For each item, term and definition are normalised (trim, lower-case, collapse spaces). The backend looks up or creates a **CanonicalEntry** for that normalised pair and `language` (default `"en"`). If one already exists, it is reused.
 - **LearningItem**: A new row is created for each item in the given **collection**, linked to the corresponding canonical entry. The request must include a valid `collectionId` (e.g. from GET `/api/collections`).
