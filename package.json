@@ -1,12 +1,12 @@
 {
   "name": "llamasvc",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
-    "build": "npx prisma generate",
+    "build": "node node_modules/prisma/build/index.js generate",
     "dev": "nodemon index.js",
     "prisma": "prisma",
     "prisma:migrate": "prisma migrate dev",
