@@ -8,11 +8,8 @@ const { prisma } = require('./services/db');
 
 const app = express();
 
-// CORS: use CORS_ORIGIN in production (e.g. https://your-frontend.com). Comma-separated for multiple.
-const origin = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim())
-  : true;
-app.use(cors({ origin }));
+// CORS: fully open for beta (any origin). Tighten via CORS_ORIGIN when needed.
+app.use(cors());
 
 app.use(express.json());
 
