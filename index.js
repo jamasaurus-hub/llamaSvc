@@ -1,4 +1,8 @@
 require('dotenv').config();
+const { validateEnv } = require('./config/validateEnv');
+
+validateEnv();
+
 const app = require('./app');
 const { port } = require('./config/app');
 
