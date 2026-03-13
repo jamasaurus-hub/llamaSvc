@@ -1,13 +1,16 @@
 /**
  * Validate required environment variables at startup.
  * Exits with code 1 and a clear message if any are missing (production-safe).
+ * Backend-owned auth: BASE_URL, EXTENSION_JWT_SECRET, AUTH0_*.
  */
 function validateEnv() {
   const required = [
     'DATABASE_URL',
-    'AUTH_ISSUER',
-    'AUTH_AUDIENCE',
-    'AUTH_JWKS_URI',
+    'BASE_URL',
+    'EXTENSION_JWT_SECRET',
+    'AUTH0_ISSUER_BASE_URL',
+    'AUTH0_CLIENT_ID',
+    'AUTH0_CLIENT_SECRET',
   ];
 
   const missing = required.filter((key) => {
