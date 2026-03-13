@@ -16,27 +16,27 @@ function normalizeBody(body = {}) {
 
 async function handleTranslate(req, res) {
   if (!isAvailable()) {
-    return res.status(503).json({
-      error: 'Translation service unavailable: missing OPENAI_API_KEY or AI_API_KEY',
-    });
+    const payload = { error: 'Translation service unavailable: missing OPENAI_API_KEY or AI_API_KEY' };
+    console.log('[translate] 503 → FE:', payload);
+    return res.status(503).json(payload);
   }
 
   const { source, target, ctx, t, mode } = normalizeBody(req.body);
 
   if (!source || !target || !t) {
-    return res.status(400).json({
-      error: 'Missing or empty required fields: sourceLanguage, targetLanguage, term',
-    });
+    const payload = { error: 'Missing or empty required fields: sourceLanguage, targetLanguage, term' };
+    console.log('[translate] 400 → FE:', payload);
+    return res.status(400).json(payload);
   }
   if (ctx.length > appConfig.maxContextLength) {
-    return res.status(400).json({
-      error: `context must be at most ${appConfig.maxContextLength} characters`,
-    });
+    const payload = { error: `context must be at most ${appConfig.maxContextLength} characters` };
+    console.log('[translate] 400 → FE:', payload);
+    return res.status(400).json(payload);
   }
   if (t.length > appConfig.maxTermLength) {
-    return res.status(400).json({
-      error: `term must be at most ${appConfig.maxTermLength} characters`,
-    });
+    const payload = { error: `term must be at most ${appConfig.maxTermLength} characters` };
+    console.log('[translate] 400 → FE:', payload);
+    return res.status(400).json(payload);
   }
 
   try {
@@ -47,11 +47,21 @@ async function handleTranslate(req, res) {
       term: t,
       promptMode: mode,
     });
-    return res.json(result);
+    const translation = result?.translation;
+    if (translation == null || translation === '') {
+      const payload = { error: 'Empty or missing translation from provider' };
+      console.log('[translate] 502 (empty result) → FE:', payload);
+      return res.status(502).json(payload);
+    }
+    const payload = { translation, definition: translation };
+    console.log('[translate] 200 → FE: translation length =', translation.length);
+    return res.json(payload);
   } catch (err) {
     const status = err.status === 401 ? 401 : err.status === 429 ? 429 : 502;
     const message = err.message || 'Translation request failed';
-    return res.status(status).json({ error: message });
+    const payload = { error: message };
+    console.log('[translate]', status, '→ FE:', payload);
+    return res.status(status).json(payload);
   }
 }
 

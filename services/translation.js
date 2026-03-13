@@ -2,7 +2,12 @@
  * Translation service: builds prompts from config and calls the LLM.
  */
 const { client, isAvailable } = require('./openai');
-const { TRANSLATION, inject, getModeInstructions } = require('../config/prompts');
+const {
+  TRANSLATION,
+  inject,
+  getModeInstructions,
+  getLanguageSpecificInstructions,
+} = require('../config/prompts');
 
 const DEFAULT_MODEL = 'gpt-4o-mini';
 const DEFAULT_MAX_TOKENS = 150;
@@ -16,11 +21,13 @@ function buildMessages(params) {
   const { sourceLanguage, targetLanguage, context, term, promptMode = 0 } = params;
   const modeInstructions = getModeInstructions(promptMode);
   const hasContext = typeof context === 'string' && context.trim().length > 0;
+  const languageSpecificInstructions = getLanguageSpecificInstructions(sourceLanguage, targetLanguage);
 
   const systemContent = inject(TRANSLATION.system, {
     sourceLanguage,
     targetLanguage,
     modeInstructions,
+    languageSpecificInstructions,
   });
   const userTemplate = hasContext ? TRANSLATION.userWithContext : TRANSLATION.userWithoutContext;
   const userContent = inject(userTemplate, {

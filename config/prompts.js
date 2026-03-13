@@ -11,6 +11,8 @@ If the term is written in {targetLanguage}, translate it into {sourceLanguage}.
 Determine which of the two languages the term is written in based on the term and context.
 Only translate between these two languages. Do not leave the term unchanged unless it is identical in both languages.
 
+{languageSpecificInstructions}
+
 Output only the translated term. Do not add explanation, punctuation, or extra text. {modeInstructions}`,
 
   userWithContext: `Context: {context}
@@ -27,6 +29,13 @@ const PROMPT_MODE_INSTRUCTIONS = {
 };
 
 const DEFAULT_MODE_INSTRUCTIONS = PROMPT_MODE_INSTRUCTIONS[0];
+
+const LANGUAGE_SPECIFIC_INSTRUCTIONS = {
+  'Chinese (Simplified)':
+    'If the word to translate is not Chinese, it should be translated into Chinese (simplified or traditional) and include the pinyin after the translated Chinese term.',
+  'Chinese (Traditional)':
+    'If the word to translate is not Chinese, it should be translated into Chinese (simplified or traditional) and include the pinyin after the translated Chinese term.',
+};
 
 /**
  * Replaces {key} placeholders in template with values from params.
@@ -56,9 +65,28 @@ function getModeInstructions(promptMode) {
     : DEFAULT_MODE_INSTRUCTIONS;
 }
 
+/**
+ * Returns language-specific instructions based on source/target languages.
+ * Prefers target language instructions when available.
+ * @param {string} sourceLanguage
+ * @param {string} targetLanguage
+ * @returns {string}
+ */
+function getLanguageSpecificInstructions(sourceLanguage, targetLanguage) {
+  const byLanguage = LANGUAGE_SPECIFIC_INSTRUCTIONS;
+  const candidates = [targetLanguage, sourceLanguage];
+  for (const lang of candidates) {
+    if (typeof lang === 'string' && byLanguage[lang]) {
+      return byLanguage[lang];
+    }
+  }
+  return '';
+}
+
 module.exports = {
   TRANSLATION,
   PROMPT_MODE_INSTRUCTIONS,
   inject,
   getModeInstructions,
+  getLanguageSpecificInstructions,
 };
